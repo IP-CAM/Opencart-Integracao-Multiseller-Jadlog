@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+	<code>IntegracaoMultisellerJadlog</code>
+    <name>Integração Multiseller-Jadlog</name>
+    <version>1.0</version>
+    <author>Wellington Rodrigues</author>
+    <file path="catalog/view/theme/default/template/extension/multiseller/account/seller_setting.twig">
+        <operation>
+            <search><![CDATA[
+            <li><a href="#tab-payment" data-toggle="tab">{{ tab_payment }}</a></li>
+            ]]></search>
+            <add position="after"><![CDATA[
+            <li><a href="#tab-jadlog" data-toggle="tab">JADLOG</a></li>
+            ]]></add>
+        </operation>
+		<operation>
+            <search><![CDATA[
+            <div class="tab-pane active" id="tab-general">
+            ]]></search>
+            <add position="before"><![CDATA[
+            <div class="tab-pane" id="tab-jadlog">
+				<table class="form" style="border-spacing:4px;border-collapse:unset;">
+					<tr>
+					<td>Status</td>
+					<td><select name="shipping_jadlog5_status">
+						{% if (shipping_jadlog5_status) %} 
+						<option value="1" selected="selected">Habilitado</option>
+						<option value="0">Desabilitado</option>
+						{% else %} 
+						<option value="1">Habilitado</option>
+						<option value="0" selected="selected">Desabilitado</option>
+						{% endif %} 
+					  </select></td>
+				  </tr>
+				  
+				  <tr>
+					<td width="150">Usuario/CNPJ</td>
+					<td><input type="text" name="shipping_jadlog5_user" value="{{ shipping_jadlog5_user }}" size="40" /></td>
+				  </tr>
+				  
+				  <tr>
+					<td width="150">Senha</td>
+					<td><input type="text" name="shipping_jadlog5_senha" value="{{ shipping_jadlog5_senha }}" size="40" /></td>
+				  </tr>
+				  
+				  <tr>
+					<td width="150">CEP Origem</td>
+					<td><input type="text" name="shipping_jadlog5_cep" value="{{ shipping_jadlog5_cep }}" size="40" /></td>
+				  </tr>
+				  
+				  <tr>
+					<td>Taxa Coleta R$</td>
+					<td><input type="text" class="dinheiro" name="shipping_jadlog5_coleta" value="{{ shipping_jadlog5_coleta }}" size="6" /></td>
+				  </tr>
+				  
+				  <tr>
+					<td>Frete</td>
+					<td><select name="shipping_jadlog5_frete">
+						{% if (shipping_jadlog5_frete) %} 
+						<option value="1" selected="selected">Pago pelo cliente</option>
+						<option value="0">Pago pela loja</option>
+						{% else %} 
+						<option value="1">Pago pelo cliente</option>
+						<option value="0" selected="selected">Pago pela loja</option>
+						{% endif %} 
+					  </select></td>
+				  </tr>
+				  
+				  <tr>
+					<td>Entrega</td>
+					<td><select name="shipping_jadlog5_entrega">
+						{% if (shipping_jadlog5_entrega) %} 
+						<option value="1" selected="selected">Retirar unidade Jadlog</option>
+						<option value="0">A domicilio</option>
+						{% else %} 
+						<option value="1">Retirar unidade Jadlog</option>
+						<option value="0" selected="selected">A domicilio</option>
+						{% endif %} 
+					  </select></td>
+				  </tr>
+
+				  <tr>
+					<td>Tipos de Entrega</td>
+								{% set tiposFrete = {'Expresso (aereo)' : 0,'.Package' : 3,'Rodoviario' : 4,'Economico' : 5,'DOC' : 6,'Corporate (aereo)' : 7,'.COM (aereo)' : 9,'Cargo (aereo)' : 12 }
+					%}
+					<td>
+					{% for k,v in tiposFrete %}
+					<input type="checkbox" name="shipping_jadlog5_tipos[]" value="{{ v }}"{{ shipping_jadlog5_tipos is not empty and v in shipping_jadlog5_tipos?' checked':'' }}> {{ k }}<br>
+					{% endfor %} 
+					</td>
+				  </tr>	  
+				</table>
+			</div>
+            ]]></add>
+        </operation>
+    </file>
+	<file path="catalog/controller/extension/multiseller/seller_setting.php">
+	<operation>
+            <search><![CDATA[
+            $this->load->model('extension/multiseller/account/seller_setting');
+            ]]></search>
+            <add position="after"><![CDATA[
+			$this->load->model('extension/multiseller/seller_profile');	
+			$this->model_extension_multiseller_seller_profile->checkJadlogTables();
+			$seller = $this->model_extension_multiseller_seller_profile->getSellerDetail($seller_id);
+            ]]></add>
+        </operation>
+        <operation>
+            <search><![CDATA[
+            $this->model_extension_multiseller_account_seller_setting->updateSetting($seller_id, $this->request->post);
+            ]]></search>
+            <add position="after"><![CDATA[
+            $this->model_extension_multiseller_seller_profile->updateSeller($seller_id, $this->request->post);
+            ]]></add>
+        </operation>
+		<operation>
+            <search><![CDATA[
+            $data['column_left'] = $this->load->controller('extension/multiseller/seller_panel');
+            ]]></search>
+            <add position="before"><![CDATA[
+            $data['shipping_jadlog5_status'] = $seller["jadlog_status"];
+			$data['shipping_jadlog5_user'] = $seller["jadlog_user"];
+			$data['shipping_jadlog5_senha'] = $seller["jadlog_password"];
+			$data['shipping_jadlog5_frete'] = $seller["jadlog_frete_cliente_loja"];
+			$data['shipping_jadlog5_entrega'] = $seller["jadlog_entrega"];
+			$data['shipping_jadlog5_cep'] = $seller["jadlog_cep_origem"];
+			$data['shipping_jadlog5_coleta'] = $seller["jadlog_taxa_coleta"];
+			$data['shipping_jadlog5_tipos'] = $seller["jadlog_tipos"];
+            ]]></add>
+        </operation>
+	</file>
+	<file path="catalog/model/extension/multiseller/seller_profile.php">
+	<operation>
+			<search><![CDATA[
+			class ModelExtensionMultisellerSellerProfile extends Model {
+			]]></search>
+            <add position="after"><![CDATA[
+            public function checkJadlogTables(){
+				$hasJadlogColumns = FALSE;
+				$result = $this->db->query( "DESCRIBE `".DB_PREFIX."multiseller`;" );
+				foreach ($result->rows as $row) {
+					if ($row['Field'] == 'jadlog_status') {
+						$hasJadlogColumns = TRUE;
+						break;
+					}
+				}
+				if (!$hasJadlogColumns) {
+					$sql = "ALTER TABLE `".DB_PREFIX."multiseller` ADD COLUMN `jadlog_status` TINYINT, ADD COLUMN `jadlog_user` TEXT, ADD COLUMN `jadlog_password` TEXT, ADD COLUMN `jadlog_cep_origem` TEXT, ADD COLUMN `jadlog_taxa_coleta` TEXT, ADD COLUMN `jadlog_frete_cliente_loja` TEXT, ADD COLUMN `jadlog_entrega` TEXT, ADD COLUMN `jadlog_tipos` TEXT;";
+					$this->db->query( $sql );
+				}
+			}
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+			if(!$data['seller_information_updated']){
+            ]]></search>
+            <add position="replace"><![CDATA[
+			if(!$data['seller_information_updated'] && !isset($data["shipping_jadlog5_status"])){
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+			$this->db->query("UPDATE `" .DB_PREFIX. "multiseller` SET seller_banner_pic = '".$this->db->escape($data['seller_banner_pic'])."', seller_profile_pic = '".$this->db->escape($data['seller_profile_pic'])."', seller_store_name = '".$this->db->escape($data['seller_store_name'])."', seller_store_seo = '".$this->db->escape($data['seller_store_seo'])."', seller_commission = '".(float)$seller_commission ."', seller_default_order_status_id = '".(int)$data['seller_default_order_status_id']."', seller_aboutus = '".$this->db->escape($data['seller_aboutus'])."', seller_store_email = '".$this->db->escape($data['seller_store_email'])."', seller_store_contact = '".$this->db->escape($data['seller_store_contact'])."', seller_address_1 = '".$this->db->escape($data['seller_address_1'])."', seller_address_2 = '".$this->db->escape($data['seller_address_2'])."', seller_city = '".$this->db->escape($data['seller_city'])."', seller_postcode = '".$this->db->escape($data['seller_postcode'])."', seller_country_id = '".(int)$data['seller_country_id']."', seller_zone_id = '".(int)$data['seller_zone_id']."', seller_status = '".(int)$status."' WHERE seller_id = '".(int)$seller_id."'");
+            ]]></search>
+            <add position="replace"><![CDATA[
+			if(isset($data["shipping_jadlog5_status"])){
+				$this->db->query("UPDATE `" .DB_PREFIX. "multiseller` SET jadlog_status = '" . $data["shipping_jadlog5_status"] . "', jadlog_user = '" . $data["shipping_jadlog5_user"] . "', jadlog_password = '" . $data["shipping_jadlog5_senha"] . "', jadlog_cep_origem = '" . $data["shipping_jadlog5_cep"] . "', jadlog_taxa_coleta = '" . $data["shipping_jadlog5_coleta"] . "', jadlog_frete_cliente_loja = '" . $data["shipping_jadlog5_frete"] . "', jadlog_entrega = '" . $data["shipping_jadlog5_entrega"] . "', jadlog_tipos = '" . $this->db->escape(json_encode($data["shipping_jadlog5_tipos"])) . "' WHERE seller_id = '".(int)$seller_id."'");
+				return;
+            }
+			else{
+				$this->db->query("UPDATE `" .DB_PREFIX. "multiseller` SET seller_banner_pic = '".$this->db->escape($data['seller_banner_pic'])."', seller_profile_pic = '".$this->db->escape($data['seller_profile_pic'])."', seller_store_name = '".$this->db->escape($data['seller_store_name'])."', seller_store_seo = '".$this->db->escape($data['seller_store_seo'])."', seller_commission = '".(float)$seller_commission ."', seller_default_order_status_id = '".(int)$data['seller_default_order_status_id']."', seller_aboutus = '".$this->db->escape($data['seller_aboutus'])."', seller_store_email = '".$this->db->escape($data['seller_store_email'])."', seller_store_contact = '".$this->db->escape($data['seller_store_contact'])."', seller_address_1 = '".$this->db->escape($data['seller_address_1'])."', seller_address_2 = '".$this->db->escape($data['seller_address_2'])."', seller_city = '".$this->db->escape($data['seller_city'])."', seller_postcode = '".$this->db->escape($data['seller_postcode'])."', seller_country_id = '".(int)$data['seller_country_id']."', seller_zone_id = '".(int)$data['seller_zone_id']."', seller_status = '".(int)$status."' WHERE seller_id = '".(int)$seller_id."'");
+			}
+			]]></add>
+		</operation>
+	</file>
+	<file path="catalog/model/extension/shipping/jadlog5.php">
+		<operation>
+			<search><![CDATA[
+			$seller_id = $query->row["seller_id"];
+            ]]></search>
+            <add position="after"><![CDATA[
+			$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "multiseller WHERE seller_id = '" . $seller_id . "'");
+			$seller = $query->row;
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+			if ($status) {
+            ]]></search>
+            <add position="replace"><![CDATA[
+			if ($status && $seller["jadlog_status"]) {
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+			$tipos = $this->config->get('shipping_jadlog5_tipos');
+            ]]></search>
+            <add position="replace"><![CDATA[
+			$tipos = json_decode($seller["jadlog_tipos"]);
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+			$default = array('cep_origem' => preg_replace('/\D/', '', $this->config->get('shipping_jadlog5_cep')),
+            ]]></search>
+            <add position="replace"><![CDATA[
+			$default = array('cep_origem' => preg_replace('/\D/', '', $seller["jadlog_cep_origem"]),
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+			'cnpj' => trim($this->config->get('shipping_jadlog5_user')),
+            ]]></search>
+            <add position="replace"><![CDATA[
+			'cnpj' => trim($seller["jadlog_user"]),
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+			'password' => trim($this->config->get('shipping_jadlog5_senha')),
+            ]]></search>
+            <add position="replace"><![CDATA[
+			'password' => trim($seller["jadlog_password"]),
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+			'coleta' => number_format($this->config->get('shipping_jadlog5_coleta'), 2, ',', ''),
+            ]]></search>
+            <add position="replace"><![CDATA[
+			'coleta' => number_format($seller["jadlog_taxa_coleta"], 2, ',', ''),
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+			'acobrar' => ($this->config->get('shipping_jadlog5_frete')==0?'N':'S'),
+            ]]></search>
+            <add position="replace"><![CDATA[
+			'acobrar' => ($seller["jadlog_frete_cliente_loja"]==0?'N':'S'),
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+			'entrega' => ($this->config->get('shipping_jadlog5_entrega')==0?'D':'R'));*/
+            ]]></search>
+            <add position="replace"><![CDATA[
+			'entrega' => ($seller["jadlog_entrega"]==0?'D':'R'));
+			]]></add>
+		</operation>
+	</file>
+</modification>
